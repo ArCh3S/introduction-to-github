@@ -1,0 +1,40 @@
+import requests
+import telebot
+OPENWEATHER_API_KEY = 'b6dbd2489d5b0242a39f15996f0b2008'
+WEATHER_URL = f"http://api.openweathermap.org/data/2.5/forecast?q=Elista&appid={OPENWEATHER_API_KEY}&units=metric&lang=ru"
+
+bot = telebot.TeleBot('7911740710:AAEtIPb7-eFZGzLgud6Sek_rH0z-DIKdgcs')
+
+@bot.message_handler(commands=['start'])  # Список вместо строки
+def send_welcome(message):
+    bot.reply_to(message, "Привет, чем могу помочь?")
+
+@bot.message_handler(commands=['weather'])  # Список вместо строки
+def send_weather(message):
+    response = requests.get(WEATHER_URL)
+    if response.status_code == 200:
+        data = response.json()
+        current_weather = data["list"][0]["weather"][0]["description"].capitalize()
+        temperature = data["list"][0]["main"]["temp"]
+        bot.reply_to(message, f"В Элисте сейчас {current_weather}, температура {temperature}°C.")
+    else:
+        bot.reply_to(message, "Не удалось получить данные о погоде. Проверьте ваше интернет-соединение.")
+
+@bot.message_handler(commands=['forecast'])  # Список вместо строки
+def send_forecast(message):
+    response = requests.get(WEATHER_URL)
+    if response.status_code == 200:
+        data = response.json()
+
+        forecast_days = []
+        for day in data["list"][:5]:  # Ограничиваемся первыми 5 записями
+            day_weather = day["weather"][0]["description"].capitalize()
+            day_temperature = day["main"]["temp"]
+            day_forecast = f"{day_weather}, {day_temperature}°C"
+            forecast_days.append(day_forecast)
+
+        bot.reply_to(message, f"Прогноз погоды на ближайшие 5 дней в Элисте:\n{chr(10).join(forecast_days)}")
+    else:
+        bot.reply_to(message, "Не удалось получить прогноз погоды. Проверьте ваше интернет-соединение.")
+
+bot.polling()  
